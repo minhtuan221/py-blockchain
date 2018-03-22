@@ -62,6 +62,14 @@ class Block(object):
     def clear(self):
         self.transactions = {}
         self.senders = set()
+    def get_allfee(self):
+        trans = self.transactions
+        fee = 0
+        for item in trans:
+            fee +=trans[item]['fee'] 
+        print(fee)
+        return fee
+
 
 
 class BlockChain(object):
@@ -100,7 +108,7 @@ class BlockChain(object):
         reward_miner = {
             'sender': '0',
             'receiver': miner_address,
-            'amount': self.get_reward(),
+            'amount': self.get_reward() + block.get_allfee(),
             'fee': 0,
             'message': 'reward_miner',
             'signature': '0'
@@ -175,13 +183,15 @@ class BlockChain(object):
                     history[item] = {
                         'timestamp': block['timestamp'],
                         'amount': -transactions[item]["amount"],
-                        'address': transactions[item]["receiver"]
+                        'address': transactions[item]["receiver"],
+                        'fee': transactions[item]["fee"]
                     }
                 if transactions[item]["receiver"] == address:
                     history[item] = {
                         'timestamp': block['timestamp'],
                         'amount': transactions[item]["amount"],
-                        'address': transactions[item]["sender"]
+                        'address': transactions[item]["sender"],
+                        'fee': 0
                     }
         return history
     
@@ -189,7 +199,7 @@ class BlockChain(object):
         history = self.get_history(address)
         balance = 0
         for trans in history:
-            balance += history[trans]['amount']
+            balance += history[trans]['amount']-history[trans]['fee']
         return balance
 
     def save_chain(self, file_Name='chain.db'):

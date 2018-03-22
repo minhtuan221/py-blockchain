@@ -30,7 +30,7 @@ print(wallet.getPublicKey())
 print('wallet.getPrivateKey():')
 print(wallet.getPrivateKey())
 pb = wallet.getPublicKey()
-trans01 = wallet.create_transaction('test01', 1, 0, 'one message')
+trans01 = wallet.create_transaction('test01', 1, 0.5, 'one message')
 trans02 = trans01.copy() # check forgery attack
 print(trans01 == trans02)
 
@@ -49,14 +49,14 @@ proof = coin.mine_proof()
 print(proof)
 x = coin.add_block(block,'abc',proof=proof)
 print(x)
-trans03 = wallet.create_transaction('test03', 3, 0, 'the third message')
+trans03 = wallet.create_transaction('test03', 3, 0.3, 'the third message')
 block = Block()
 # block.add_transaction(trans02)
 block.add_transaction(trans03)
 
 proof = coin.mine_proof()
 print(proof)
-x = coin.add_block(block, 'abc', proof=proof)
+x = coin.add_block(block, 'abcd', proof=proof)
 
 for block in coin.view_blockchain():
     print(json.dumps(block, indent=4))

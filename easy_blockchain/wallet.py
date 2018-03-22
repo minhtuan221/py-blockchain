@@ -48,7 +48,7 @@ class Wallet(object):
             'fee':fee,
             'message':message,
         }
-        print(json.dumps(transaction, sort_keys=True))
+        # print(json.dumps(transaction, sort_keys=True))
         signal = self.create_signature(json.dumps(transaction, sort_keys=True))
         transaction['signature'] = signal
         return transaction

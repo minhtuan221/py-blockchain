@@ -67,7 +67,7 @@ class Block(object):
         fee = 0
         for item in trans:
             fee +=trans[item]['fee'] 
-        print(fee)
+        # print(fee)
         return fee
 
     def __len__(self):
@@ -76,25 +76,31 @@ class Block(object):
 
 
 class BlockChain(object):
-    def __init__(self):
+    def __init__(self, curve=ecdsa.SECP256k1):
         self.chain = []
         self.lastblock = None
         self.INITIAL_COINS_PER_BLOCK = 50
         self.HALVING_FREQUENCY = 100000
         self.MINBLOCK = 1
+        self.curve = curve
         # Create the first (genesis) block
         firstblock = Block()
         self.add_block(firstblock, '0', previous_hash='1')
 
-    def get_reward(self):
+    def get_reward(self, index):
         # INITIAL_COINS_PER_BLOCK coins per block.
         # Reduce by haft every HALVING_FREQUENCY blocks
-        index = len(self.chain)+1
+        # index = len(self.chain)+1
         reward = self.INITIAL_COINS_PER_BLOCK
         if self.HALVING_FREQUENCY is not None:
             for i in range(1, (round(index / self.HALVING_FREQUENCY) + 1)):
-                reward = reward / 2
+                reward = min(reward / 2, 1)
         return reward
+    
+    def reward_signature(self, message, index):
+        guess = f'{message}{index}'.encode()
+        signature = hashlib.sha256(guess).hexdigest()
+        return signature
 
     def hash(self, block):
         # Make sure that the Dictionary is Ordered, or It'll be inconsistent hashing
@@ -104,7 +110,7 @@ class BlockChain(object):
     def add_block(self, block: Block, miner_address, proof=1,  previous_hash=None):
         # check if block have sender = '0'
         if "0" in block.senders:
-            print(block.senders)
+            # print(block.senders)
             return False
         for sender in block.senders:
             if not self.valid_sender(sender):
@@ -114,11 +120,12 @@ class BlockChain(object):
         reward_miner = {
             'sender': '0',
             'receiver': miner_address,
-            'amount': self.get_reward() + block.get_allfee(),
+            'amount': self.get_reward(len(self.chain)+1) + block.get_allfee(),
             'fee': 0,
             'message': 'reward_miner',
-            'signature': '0'
         }
+        reward_miner['signature'] = self.reward_signature(
+            json.dumps(reward_miner, sort_keys=True), len(self.chain)+1)
         block.add_transaction(reward_miner)
         block = block.export()
         return self.process_block(block, proof=proof, previous_hash=previous_hash)
@@ -196,6 +203,13 @@ class BlockChain(object):
                     history[item] = {
                         'timestamp': block['timestamp'],
                         'amount': transactions[item]["amount"],
+                        'address': transactions[item]["sender"],
+                        'fee': 0
+                    }
+                if transactions[item]["receiver"] == transactions[item]["sender"]:
+                    history[item] = {
+                        'timestamp': block['timestamp'],
+                        'amount': 0,
                         'address': transactions[item]["sender"],
                         'fee': 0
                     }

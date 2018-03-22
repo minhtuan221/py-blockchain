@@ -3,6 +3,11 @@ A blockchain for human
 
 ## Getting Started
 
+Installation:
+```
+pip install easy_blockchain
+```
+
 Create your first wallet and add your first transaction:
 ```
 from easy_blockchain.wallet import Wallet

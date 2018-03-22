@@ -53,6 +53,7 @@ trans03 = wallet.create_transaction('test03', 3, 0.3, 'the third message')
 block = Block()
 # block.add_transaction(trans02)
 block.add_transaction(trans03)
+print(len(block))
 
 proof = coin.mine_proof()
 print(proof)

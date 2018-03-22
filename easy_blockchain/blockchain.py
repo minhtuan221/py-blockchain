@@ -70,6 +70,9 @@ class Block(object):
         print(fee)
         return fee
 
+    def __len__(self):
+        return len(self.transactions)
+
 
 
 class BlockChain(object):
@@ -78,6 +81,7 @@ class BlockChain(object):
         self.lastblock = None
         self.INITIAL_COINS_PER_BLOCK = 50
         self.HALVING_FREQUENCY = 100000
+        self.MINBLOCK = 1
         # Create the first (genesis) block
         firstblock = Block()
         self.add_block(firstblock, '0', previous_hash='1')
@@ -105,6 +109,8 @@ class BlockChain(object):
         for sender in block.senders:
             if not self.valid_sender(sender):
                 return False
+        if len(block)<self.MINBLOCK and self.lastblock is not None:
+            return False
         reward_miner = {
             'sender': '0',
             'receiver': miner_address,

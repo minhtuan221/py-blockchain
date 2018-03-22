@@ -1,4 +1,4 @@
-# py-blockchain
+# Easy-blockchain
 A blockchain for human
 
 ## Getting Started

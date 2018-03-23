@@ -62,21 +62,14 @@ class Block(object):
     def clear(self):
         self.transactions = {}
         self.senders = set()
-    def get_allfee(self):
-        trans = self.transactions
-        fee = 0
-        for item in trans:
-            fee +=trans[item]['fee'] 
-        # print(fee)
-        return fee
-
+    
     def __len__(self):
         return len(self.transactions)
 
 
 
 class BlockChain(object):
-    def __init__(self, curve=ecdsa.SECP256k1):
+    def __init__(self, firstblock=Block(), curve=ecdsa.SECP256k1):
         self.chain = []
         self.lastblock = None
         self.INITIAL_COINS_PER_BLOCK = 50
@@ -84,8 +77,8 @@ class BlockChain(object):
         self.MINBLOCK = 1
         self.curve = curve
         # Create the first (genesis) block
-        firstblock = Block()
-        self.add_block(firstblock, '0', previous_hash='1')
+        firstblock = firstblock
+        self.process_block(firstblock.export(), '0', proof=1, previous_hash='1')
 
     def get_reward(self, index):
         # INITIAL_COINS_PER_BLOCK coins per block.
@@ -96,6 +89,15 @@ class BlockChain(object):
             for i in range(1, (round(index / self.HALVING_FREQUENCY) + 1)):
                 reward = min(reward / 2, 1)
         return reward
+    
+    def get_blockfee(self, trans):
+        # trans = self.transactions
+        fee = 0
+        for item in trans:
+            fee += trans[item]['fee']
+        # print(fee)
+        return fee
+
     
     def reward_signature(self, message, index):
         guess = f'{message}{index}'.encode()
@@ -110,17 +112,19 @@ class BlockChain(object):
     def add_block(self, block: Block, miner_address, proof=1,  previous_hash=None):
         # check if block have sender = '0'
         if "0" in block.senders:
-            # print(block.senders)
+            # check if block already have a reward transactions
             return False
-        for sender in block.senders:
-            if not self.valid_sender(sender):
-                return False
+        # valid amount send in block:
+        if not self.valid_sender_amount(block.transactions,block.senders):
+            return False
         if len(block)<self.MINBLOCK and self.lastblock is not None:
             return False
+        reward_amount = self.get_reward(
+            len(self.chain)+1) + self.get_blockfee(block.transactions)
         reward_miner = {
             'sender': '0',
             'receiver': miner_address,
-            'amount': self.get_reward(len(self.chain)+1) + block.get_allfee(),
+            'amount': reward_amount,
             'fee': 0,
             'message': 'reward_miner',
         }
@@ -128,9 +132,9 @@ class BlockChain(object):
             json.dumps(reward_miner, sort_keys=True), len(self.chain)+1)
         block.add_transaction(reward_miner)
         block = block.export()
-        return self.process_block(block, proof=proof, previous_hash=previous_hash)
+        return self.process_block(block, miner_address, proof=proof, previous_hash=previous_hash)
 
-    def process_block(self, block, proof=1, previous_hash=None):
+    def process_block(self, block, miner_address, proof=1, previous_hash=None):
         if self.valid_block(proof):
             newblock = {
                 'index': len(self.chain) + 1,
@@ -138,6 +142,7 @@ class BlockChain(object):
                 'transactions': block,
                 'proof': proof,
                 'previous_hash': previous_hash or self.chain[-1]['hash'],
+                'miner':miner_address,
             }
             newblock['hash'] = self.hash(newblock)
             self.chain.append(newblock)
@@ -175,13 +180,42 @@ class BlockChain(object):
             # Check if the Proof of Work is correct
             if not self.valid_proof(last_block['proof'], block['proof'], last_block['previous_hash']):
                 return False
+            
+            # Check if the miner reward is correct
+            if not self.valid_miner(block['transactions'], current_index):
+                return False
+            # reward_amount_real =  block['miner']
 
             last_block = block
             current_index += 1
 
         return True
+    
+    def valid_miner(self, transactions, current_index):
+        # get the true reward of the block
+        reward_amount = self.get_reward(
+            current_index) + self.get_blockfee(transactions)
+        reward_amount_real = 0
+        for key in transactions:
+            if transactions[key]['sender'] =='0':
+                reward_amount_real += transactions[key]['amount']
+        if reward_amount_real==reward_amount:
+            return True
+        return False
 
-    def valid_sender(self, sender):
+    def valid_sender_amount(self, block, senders):
+        # don't let any sender have below zero to send money
+        amount = {}
+        for signature in block:
+            trans = block[signature]
+            if not trans['sender'] in amount:
+                amount[trans['sender']] = 0
+            amount[trans['sender']] += trans['amount'] + trans['fee']
+        for sender in senders:
+            # get Sum amount of all transactions of one sender in block
+            # print(self.get_balance(sender), amount[sender])
+            if self.get_balance(sender)<amount[sender]:
+                return False
         return True
 
     def view_blockchain(self):
@@ -192,26 +226,26 @@ class BlockChain(object):
         for block in self.chain:
             transactions = block['transactions']
             for item in transactions:
-                if transactions[item]["sender"] == address:
+                if transactions[item]["receiver"] == transactions[item]["sender"]:
+                    history[item] = {
+                        'timestamp': block['timestamp'],
+                        'amount': 0,
+                        'address': transactions[item]["sender"],
+                        'fee': transactions[item]["fee"]
+                    }
+                elif transactions[item]["sender"] == address:
                     history[item] = {
                         'timestamp': block['timestamp'],
                         'amount': -transactions[item]["amount"],
                         'address': transactions[item]["receiver"],
                         'fee': transactions[item]["fee"]
                     }
-                if transactions[item]["receiver"] == address:
+                elif transactions[item]["receiver"] == address:
                     history[item] = {
                         'timestamp': block['timestamp'],
                         'amount': transactions[item]["amount"],
                         'address': transactions[item]["sender"],
-                        'fee': 0
-                    }
-                if transactions[item]["receiver"] == transactions[item]["sender"]:
-                    history[item] = {
-                        'timestamp': block['timestamp'],
-                        'amount': 0,
-                        'address': transactions[item]["sender"],
-                        'fee': 0
+                        'fee': transactions[item]["fee"]
                     }
         return history
     

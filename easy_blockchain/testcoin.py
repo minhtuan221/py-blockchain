@@ -32,7 +32,17 @@ print('The block 1 have 2 real transaction:')
 print(json.dumps(block.transactions, indent=2))
 
 # create a blockchain and become an miner
-coin = BlockChain()
+# create genesis block
+genesis_block = Block()
+genesis_tran01 = Wallet().create_transaction(user01,1000,0,'genesis to user01',sender='0')
+genesis_tran02 = Wallet().create_transaction(
+    user02, 1000, 0, 'genesis to user02', sender='0')
+
+genesis_block.add_transaction(genesis_tran01)
+genesis_block.add_transaction(genesis_tran02)
+
+# create a blockchain and add the genesis block
+coin = BlockChain(firstblock=genesis_block)
 # mine a proof
 proof = coin.mine_proof()
 print('The first proof is:',proof)
@@ -46,6 +56,7 @@ print(x) # will return true if successful create a new block
 print('--------------------------------------')
 print('The blockchain with 2 first blocks:')
 print(json.dumps(coin.view_blockchain(), indent=2))
+
 
 # create 2 more transaction for block 3
 trans01 = wallet.create_transaction(user02, 1.3, 0.21, 'user01 send to user02')
@@ -63,6 +74,30 @@ print('The proof is:', proof)
 print('--------------------------------------')
 print('The blockchain with 3 blocks:')
 print(json.dumps(coin.view_blockchain(), indent=2))
+
+
+# create 2 more transaction for block 4
+trans01 = wallet.create_transaction(user02, 10000, 0.21, 'user01 send to user02')
+trans02 = wallet02.create_transaction(
+    user01, 10, 1000, 'user02 send to user01')
+# create block 4 then add 2 transaction to it
+block = Block()
+t1 = block.add_transaction(trans01)
+t2 = block.add_transaction(trans02)
+print(t1,t2)
+print('--------------------------------------')
+print('The block 4 have been created. Find the proof:')
+# mine a proof
+proof = coin.mine_proof()
+print('The proof is:', proof)
+ok = coin.add_block(block, user03, proof=proof)
+print('Block 4 will not be add because of the over-amount of user01 and user02:', ok)
+print('--------------------------------------')
+print('The blockchain with remain blocks:')
+print(json.dumps(coin.view_blockchain(), indent=2))
+
+
+
 print('--------------------------------------')
 print('The transaction history and the balance of users:')
 mycoin = coin.get_history(user01)

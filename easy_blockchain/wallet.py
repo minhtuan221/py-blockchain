@@ -40,9 +40,11 @@ class Wallet(object):
          # make it shorter and decode to readable string
         return self.private_key
 
-    def create_transaction(self, receiver, amount, fee=0, message={}):
+    def create_transaction(self, receiver, amount, fee=0, message={},sender=None):
+        if sender is None:
+            sender = self.getPublicKey()
         transaction = {
-            'sender':self.getPublicKey(),
+            'sender': sender,
             'receiver':receiver,
             'amount':amount,
             'fee':fee,

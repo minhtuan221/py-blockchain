@@ -4,7 +4,7 @@ import base64
 import json
 import hashlib
 from datetime import datetime
-from database import savetoFile, loadfromFile
+from .database import savetoJson, loadfromJson
 
 class Wallet(object):
     def __init__(self, curve=ecdsa.SECP256k1):
@@ -66,6 +66,15 @@ class Wallet(object):
         self.public_key_hex = public_key  # hex type
         self.public_key = base64.b64encode(
             bytes.fromhex(self.public_key_hex)).decode()  # string type
+    
+    def savetoJson(self):
+        data = {
+            'private_key':self.private_key,
+            'private_key_hex': self.private_key_hex,
+            'public_key': self.public_key,
+            'public_key_hex':self.public_key_hex,
+        }
+        savetoJson(data,'wallet.txt')
 
 
 

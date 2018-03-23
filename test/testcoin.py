@@ -1,5 +1,5 @@
-from wallet import Wallet
-from blockchain import Block, BlockChain
+from easy_blockchain.wallet import Wallet
+from easy_blockchain.blockchain import Block, BlockChain
 from ecdsa import SigningKey
 import ecdsa
 import base64
@@ -114,3 +114,4 @@ print(json.dumps(mycoin, indent=4))
 # save blockchain to local database
 coin.save_chain()
 coin.load_chain()
+wallet.savetoJson()

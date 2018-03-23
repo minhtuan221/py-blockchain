@@ -1,4 +1,5 @@
 import pickle
+import json
 
 
 def savetoFile(data, file_Name: str):
@@ -19,4 +20,15 @@ def loadfromFile(file_Name: str):
     # load the object from the file into var b
     data = pickle.load(fileObject)
     # print(data)
+    return data
+
+
+def savetoJson(data, file_Name: str):
+    with open(file_Name, 'w') as outfile:
+        json.dump(data, outfile)
+
+
+def loadfromJson(file_Name: str):
+    with open(file_Name) as json_data:
+        data = json.load(json_data)
     return data

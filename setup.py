@@ -20,7 +20,7 @@ except (IOError, ImportError):
 
 setup(
     name='easy_blockchain',
-    version='0.1.3',
+    version='0.1.5',
     description='A blockchain for human',
     long_description=readme,
     author='Minh Tuan Nguyen',
@@ -47,5 +47,5 @@ setup(
     # ]},
     packages=find_packages(exclude=('test*', 'testpandoc*','image*')),
     include_package_data=False,
-    install_requires=['flask==0.12.2', 'cython_npm', 'requests==2.18.4','sanic','ecdsa'],
+    install_requires=['flask','requests','ecdsa'],
 )

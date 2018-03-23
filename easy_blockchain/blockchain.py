@@ -4,7 +4,7 @@ import base64
 import json
 import hashlib
 from datetime import datetime
-from database import savetoFile, loadfromFile
+from .database import savetoFile, loadfromFile
 
 
 class Block(object):

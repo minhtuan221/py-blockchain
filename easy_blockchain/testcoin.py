@@ -10,7 +10,7 @@ import hashlib
 # Create the first user
 wallet = Wallet()
 user01 = wallet.getPublicKey()
-trans01 = wallet.create_transaction('test01', 1, 0.5, 'one message')
+trans01 = wallet.create_transaction('test01', 1, 0.5, 'user01 send 1')
 trans02 = trans01.copy() # create a forgery attack
 print('Check if a forgery attack have same as real transaction')
 print('trans01 == trans02', trans01 == trans02)

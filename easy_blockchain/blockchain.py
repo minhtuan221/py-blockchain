@@ -4,7 +4,34 @@ import base64
 import json
 import hashlib
 from datetime import datetime
-from .database import savetoFile, loadfromFile
+from easy_blockchain.database import savetoFile, loadfromFile
+
+transactions_bitcoin = {
+    'input':{
+        'index':{
+            'previous_tx': 'previous_tx',
+            'signature': 'signature',
+        }
+    },
+    'output':{
+        'index':{
+            'amount': 'amount',
+            'receiver': 'receiver',
+            'message': 'message',
+        }
+    }
+}
+transactions_template = {
+    'hash_tx':{
+        'previous_trans':'hash _tx of the previous transaction or last index of the blockchain',
+        'previous_tx': 'previous _tx of this sender, hash_tx is the index of transaction. It is the hash result of the over all transaction include previous_trans and signature',
+        'sender':'public_key of the sender',
+        'amount':'the transaction amount',
+        'fee':'fee of the transaction, paid by the sender',
+        'message': 'message with arbitrary data',
+        'signature':'transaction signature'
+    }
+}
 
 
 class Block(object):
@@ -28,15 +55,16 @@ class Block(object):
         self.senders = set()
 
     def add_transaction(self, transaction: dict):
-        message = transaction
+        message = transaction.copy()
         # cannot send amount < 0
-        if transaction['amount']<0 or transaction['fee']<0:
+        if transaction['amount']<0:
             return False
         signature = message.pop('signature', None)
         public_key = message['sender']
         message = json.dumps(message, sort_keys=True)
         if self.check_signature(public_key, signature, message):
-            self.transactions[signature] = transaction
+            hash_tx = self.hash(transaction)
+            self.transactions[hash_tx] = transaction
             self.senders.add(public_key)
             return True
         return False
@@ -61,6 +89,11 @@ class Block(object):
 
     def export(self):
         return self.transactions
+    
+    def hash(self, block):
+        # Make sure that the Dictionary is Ordered, or It'll be inconsistent hashing
+        block_string = json.dumps(block, sort_keys=True).encode()
+        return hashlib.sha256(block_string).hexdigest()
 
     def clear(self):
         self.transactions = {}
@@ -90,14 +123,15 @@ class BlockChain(object):
         reward = self.INITIAL_COINS_PER_BLOCK
         if self.HALVING_FREQUENCY is not None:
             for i in range(1, (round(index / self.HALVING_FREQUENCY) + 1)):
-                reward = min(reward / 2, 1)
+                reward = reward / 2
         return reward
     
     def get_blockfee(self, trans):
         # trans = self.transactions
         fee = 0
         for item in trans:
-            fee += trans[item]['fee']
+            if trans[item]['sender'] == trans[item]['receiver']:
+                fee += trans[item]['amount']
         # print(fee)
         return fee
 
@@ -120,16 +154,20 @@ class BlockChain(object):
         # valid amount send in block:
         if not self.valid_sender_amount(block.transactions,block.senders):
             return False
+        
+        # valid block minimum number of transactions
         if len(block)<self.MINBLOCK and self.lastblock is not None:
             return False
+        
+        # create a transaction for reward miner
         reward_amount = self.get_reward(
             len(self.chain)+1) + self.get_blockfee(block.transactions)
         reward_miner = {
             'sender': '0',
             'receiver': miner_address,
             'amount': reward_amount,
-            'fee': 0,
             'message': 'reward_miner',
+            'signature': ''
         }
         reward_miner_signature = self.reward_signature(
             json.dumps(reward_miner, sort_keys=True), len(self.chain)+1)
@@ -175,9 +213,6 @@ class BlockChain(object):
         current_index = 1
         while current_index < len(chain):
             block = chain[current_index]
-            print(f'{last_block}')
-            print(f'{block}')
-            print("\n-----------\n")
             # Check if the hash of the block is correct
             if block['previous_hash'] != self.hash(last_block):
                 return False
@@ -232,7 +267,7 @@ class BlockChain(object):
             trans = block[signature]
             if not trans['sender'] in amount:
                 amount[trans['sender']] = 0
-            amount[trans['sender']] += trans['amount'] + trans['fee']
+            amount[trans['sender']] += trans['amount']
         for sender in senders:
             # get Sum amount of all transactions of one sender in block
             # print(self.get_balance(sender), amount[sender])
@@ -254,7 +289,7 @@ class BlockChain(object):
                         'timestamp': block['timestamp'],
                         'amount': -transactions[item]["amount"],
                         'address': transactions[item]["receiver"],
-                        'fee': transactions[item]["fee"],
+                        'fee': 0,
                         'message': transactions[item]["message"],
                     }
                 if transactions[item]["receiver"] == address:
@@ -262,15 +297,15 @@ class BlockChain(object):
                         'timestamp': block['timestamp'],
                         'amount': transactions[item]["amount"],
                         'address': transactions[item]["sender"],
-                        'fee': transactions[item]["fee"],
+                        'fee': 0,
                         'message': transactions[item]["message"],
                     }
                 if transactions[item]["sender"] == address and transactions[item]["receiver"] == transactions[item]["sender"]:
                     history[item] = {
                         'timestamp': block['timestamp'],
-                        'amount': 0,
+                        'amount': -transactions[item]["amount"],
                         'address': transactions[item]["sender"],
-                        'fee': transactions[item]["fee"],
+                        'fee': transactions[item]["amount"],
                         'message': transactions[item]["message"],
                     }
         return history
@@ -322,4 +357,4 @@ class BlockChain(object):
         return self.valid_zero(guess_hash)
 
     def valid_zero(self, guess_hash):
-        return guess_hash[:3] == "000"
+        return guess_hash[:5] == "00000"

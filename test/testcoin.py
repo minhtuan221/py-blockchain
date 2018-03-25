@@ -1,5 +1,9 @@
-from easy_blockchain.wallet import Wallet
-from easy_blockchain.blockchain import Block, BlockChain
+from cython_npm.cythoncompile import require
+Wallet = require('../easy_blockchain/wallet').Wallet
+# from easy_blockchain.wallet import Wallet
+Block = require('../easy_blockchain/blockchain').Block
+BlockChain = require('../easy_blockchain/blockchain').BlockChain
+# from easy_blockchain.blockchain import Block, BlockChain
 from ecdsa import SigningKey
 import ecdsa
 import base64
@@ -60,7 +64,7 @@ print(json.dumps(coin.view_blockchain(), indent=2))
 
 # create 2 more transaction for block 3
 trans01 = wallet.create_transaction(user02, 1.3, 0.21, 'user01 send to user02')
-trans02 = wallet02.create_transaction(user02, 10, 0.5, 'user02 send to user02, him self')
+trans02 = wallet02.create_transaction(user02, 10, 0.5, 'user02 send to user02, him self=> will be count as fee')
 # create block 3 then add 2 transaction to it
 block = Block()
 block.add_transaction(trans01)

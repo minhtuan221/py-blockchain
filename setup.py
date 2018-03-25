@@ -20,7 +20,7 @@ except (IOError, ImportError):
 
 setup(
     name='easy_blockchain',
-    version='0.1.5',
+    version='0.1.6',
     description='A blockchain for human',
     long_description=readme,
     author='Minh Tuan Nguyen',

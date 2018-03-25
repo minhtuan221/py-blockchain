@@ -4,11 +4,13 @@ import base64
 import json
 import hashlib
 from datetime import datetime
-from .database import savetoJson, loadfromJson
+from easy_blockchain.database import savetoJson, loadfromJson
+
 
 class Wallet(object):
     def __init__(self, curve=ecdsa.SECP256k1):
         self.curve = curve
+        self.history = {}
         # generate private key
         sk = ecdsa.SigningKey.generate(curve=curve)
         private_key = sk.to_string().hex() # convert sk object to string then to hex
@@ -47,7 +49,6 @@ class Wallet(object):
             'sender': sender,
             'receiver':receiver,
             'amount':amount,
-            'fee':fee,
             'message':message,
         }
         # print(json.dumps(transaction, sort_keys=True))

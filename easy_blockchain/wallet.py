@@ -50,6 +50,7 @@ class Wallet(object):
             'receiver':receiver,
             'amount':amount,
             'message':message,
+            'timestamp': datetime.utcnow().isoformat(),
         }
         # print(json.dumps(transaction, sort_keys=True))
         signal = self.create_signature(json.dumps(transaction, sort_keys=True))

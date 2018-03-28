@@ -167,7 +167,7 @@ class BlockChain(object):
             'receiver': miner_address,
             'amount': reward_amount,
             'message': 'reward_miner',
-            'signature': ''
+            'timestamp': datetime.utcnow().isoformat(),
         }
         reward_miner_signature = self.reward_signature(
             json.dumps(reward_miner, sort_keys=True), len(self.chain)+1)
@@ -314,7 +314,7 @@ class BlockChain(object):
         history = self.get_history(address)
         balance = 0
         for trans in history:
-            balance += history[trans]['amount']-history[trans]['fee']
+            balance += history[trans]['amount']
         return balance
 
     def save_chain(self, file_Name='chain.db'):
